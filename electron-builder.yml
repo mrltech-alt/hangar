@@ -1,0 +1,86 @@
+appId: dev.hangar.app
+productName: Hangar
+directories:
+  output: dist
+  buildResources: resources
+
+# The Electron side is SELF-CONTAINED. `electron.vite.config.ts` sets `externalizeDeps: false`, so
+# `out/main/index.js` and `out/preload/index.js` require nothing but `electron` and `node:*`
+# builtins — measured, and re-asserted by `scripts/package.mjs` on every build. That is what lets
+# this list omit `node_modules` entirely: electron-builder copies the whole production dependency
+# tree into the asar independently of these patterns, and every one of those packages
+# (react, @codemirror/*, @xterm/*, …) is already bundled into `out/`. Excluding them took the asar
+# from 59 MB to 5.4 MB. It also keeps `node-pty` — a native module built for the SYSTEM Node's ABI
+# (G2) — out of the Electron side altogether, where CLAUDE.md rule 3 says it must never appear.
+files:
+  - out/**
+  - package.json
+  - '!node_modules/**'
+
+# The session host and the CLI run under the SYSTEM Node from Contents/Resources/app (spec §20 and
+# §1121's packaging note), as raw `.ts` with no build step. `src/main/index.ts` computes
+# `repoRoot = join(process.resourcesPath, 'app')` when `app.isPackaged`, which is exactly this tree.
+# Everything the Node half imports by bare specifier has to be here or the host dies with
+# MODULE_NOT_FOUND; `scripts/package.mjs` derives that set from the sources and fails the build if
+# this list does not cover it, and `scripts/packaging.test.ts` asserts the same thing in the suite.
+extraResources:
+  - from: host
+    to: app/host
+    filter: ['**/*', '!**/*.test.ts']
+  - from: cli
+    to: app/cli
+    filter: ['**/*', '!**/*.test.ts']
+  - from: shared
+    to: app/shared
+    filter: ['**/*', '!**/*.test.ts']
+  - from: bin
+    to: app/bin
+  # Plan 09's dictation helper, built by `npm run build:dictate` (and first thing by `npm run app`).
+  # It lands at Contents/Resources/app/resources/bin/hangar-dictate — the SAME path relative to
+  # `repoRoot` as in a checkout, so `src/main/index.ts` resolves it with one `join` for both. Not
+  # `buildResources: resources` above: that is build input, and none of it is copied into the app.
+  # Only the binary: a `.building-*` leftover from an interrupted compile must never ship.
+  # `scripts/package.mjs` fails the build if the binary is missing or this entry does not say this.
+  - from: resources/bin
+    to: app/resources/bin
+    filter: ['hangar-dictate']
+  # 58 MB of the 65 MB in node-pty's `prebuilds/` is Windows binaries. Both darwin arches are kept:
+  # `spawnHelperCandidates` resolves the helper through `process.arch`, so pruning by arch here
+  # would silently break an x64 build rather than fail it.
+  - from: node_modules/node-pty
+    to: app/node_modules/node-pty
+    filter: ['**/*', '!prebuilds/win32-*/**']
+  # Headers only. Nothing under `node-pty/lib` references it at run time (measured: zero hits), but
+  # it is node-pty's declared dependency, so it is carried to keep that tree complete.
+  - from: node_modules/node-addon-api
+    to: app/node_modules/node-addon-api
+  - from: node_modules/@xterm/headless
+    to: app/node_modules/@xterm/headless
+  - from: node_modules/@xterm/addon-serialize
+    to: app/node_modules/@xterm/addon-serialize
+  # `src/` is zod's own TypeScript, 3.5 MB of it, reachable through no export path.
+  - from: node_modules/zod
+    to: app/node_modules/zod
+    filter: ['**/*', '!src/**']
+
+# NEVER remove this. electron-builder's default is to rebuild every native dependency against
+# ELECTRON's ABI (149); the host runs under the system Node (137), and a node-pty rebuilt for
+# Electron dies there with a NODE_MODULE_VERSION mismatch on the first PTY (G2).
+npmRebuild: false
+
+mac:
+  target: [dir]
+  category: public.app-category.developer-tools
+  # electron-builder does not sign. `scripts/sign.mjs` does, at the end of `npm run app`, with the
+  # self-signed `Hangar Local Signing` identity (or `HANGAR_SIGN_IDENTITY`). electron-builder could
+  # not use it anyway: it only takes identities `security find-identity -v` calls valid, and an
+  # untrusted self-signed certificate is not one, although codesign signs with it by SHA-1 (G93).
+  # And no hardened runtime: nothing here needs it, and it would cost the JIT entitlements Electron
+  # needs under it.
+  identity: null
+  icon: resources/icon.png
+  # Both strings are what the macOS permission prompts say. Electron's own plist already has a
+  # microphone string ("This app needs access to the microphone"), which says nothing about why.
+  extendInfo:
+    NSMicrophoneUsageDescription: Hangar listens only while you dictate into a pane.
+    NSSpeechRecognitionUsageDescription: Hangar turns your dictation into text on this Mac, with Apple's on-device speech recognition.

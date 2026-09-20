@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Hangar is an arm64 macOS app: the session host spawns real PTYs through
+# node-pty and drives a login shell, so the checks only mean anything on macOS.
+jobs:
+  check:
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # `npm ci` runs scripts/fix-node-pty.mjs via postinstall, which is what
+      # makes the native module match the Node that will load it.
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      # vitest, then scripts/smoke-host.mjs, which starts a real host, attaches
+      # and reconnects. The `claude` CLI is not installed here, so the two probe
+      # tests that resolve it through a login shell assert everything except
+      # what it found — see shell-env.test.ts and commands.test.ts.
+      - run: npm test
+
+      - run: npm run build

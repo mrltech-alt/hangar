@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Authored as the development policy, whose extra connect-src tokens are Vite's HMR socket;
+         `npm run build` rewrites this element to the tighter production policy, so in out/ it
+         reads connect-src 'self'. Both strings come from rendererCsp() in shared/csp.ts, and
+         csp.test.ts asserts this element still matches the development one byte for byte.
+         Production is additionally sent the same policy as a real header by src/main/window.ts. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'; connect-src 'self' ws://localhost:* http://localhost:*" />
+    <title>Hangar</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

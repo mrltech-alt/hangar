@@ -1,0 +1,73 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg-0: #0f1115;
+  --color-bg-1: #151821;
+  --color-bg-2: #1c2029;
+  --color-bg-3: #242935;
+  --color-line: #2a3040;
+  --color-fg: #d6d9e0;
+  --color-fg-2: #9aa3b5;
+  --color-muted: #667089;
+  /* `accent` is the INTERACTIVE accent (focus rings, selected row, links). `green`/`amber`/`blue`/
+     `red` are the STATUS quartet (§6.5 session states). `blue` deliberately carries the same value
+     as `accent` today and is deliberately a separate token, not `var(--color-accent)`: they mean
+     different things and either may be retuned without dragging the other with it. Until then
+     `text-accent` and `text-blue` are visually indistinguishable, so pick by meaning, not by eye. */
+  --color-accent: #6ea8fe;
+  --color-green: #3ddc84;
+  --color-amber: #f5b83d;
+  --color-blue: #6ea8fe;
+  --color-red: #ff6b6b;
+  --font-sans: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+  --font-mono: Menlo, 'SF Mono', monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-bg-0);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  /* Chrome-shell default: an app window should not rubber-band-select its own furniture on a
+     drag. It is a DEFAULT, not a policy — anything the user needs to copy has to opt back in with
+     `.select-text`, and §12.5's diffs and §12.6's git stderr both do. Declared unlayered below
+     rather than relying on Tailwind's own `select-text`, whose `@layer utilities` loses to these
+     unlayered rules; on a descendant it would in fact win (a directly-applied declaration always
+     beats an inherited one), but that is a subtlety to not have to re-derive at each call site. */
+  user-select: none;
+}
+
+.select-text,
+.select-text * {
+  user-select: text;
+  cursor: auto;
+}
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}

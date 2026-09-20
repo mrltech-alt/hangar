@@ -1,0 +1,15 @@
+#!/bin/sh
+# Hangar CLI shim. HANGAR_NODE is set by the app inside agent sessions; otherwise use `node` from PATH.
+# Resolves symlinks so `ln -s <repo>/bin/hangar /usr/local/bin/hangar` works; without it that gives a
+# bare MODULE_NOT_FOUND stack, which is the first thing anyone hits when putting this on PATH.
+SELF="$0"
+while [ -L "$SELF" ]; do
+  LINK="$(readlink "$SELF")"
+  case "$LINK" in
+    /*) SELF="$LINK" ;;
+    *) SELF="$(dirname "$SELF")/$LINK" ;;
+  esac
+done
+DIR="$(cd "$(dirname "$SELF")" && pwd)"
+NODE="${HANGAR_NODE:-node}"
+exec "$NODE" --disable-warning=ExperimentalWarning "$DIR/../cli/main.ts" "$@"

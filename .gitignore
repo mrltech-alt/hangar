@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+*.log
+.DS_Store
+.vite/
+coverage/
+# Built by `npm run build:dictate`; a compiled Mach-O, never committed.
+resources/bin/
+
+# Internal planning docs — kept locally, never published.
+docs/superpowers/
