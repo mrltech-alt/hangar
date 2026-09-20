@@ -295,9 +295,10 @@ is honest about what it has not proved.
   diff.
 - **Removing a project from a running agent** does not take the directory away from the live
   session, which keeps the `--add-dir` it was launched with until it restarts.
-- A design exists for creating a whole folder of agents from one Linear cycle. It is not built.
 - Several behaviours are built and unit-tested but have never been driven by hand — Gatekeeper on
-  another machine, terminal reflow on resize, and a few Linear paths among them. They are listed,
+  another machine, terminal reflow on resize, **a whole-cycle run** (every test of it fakes the
+  cycle reads and never runs `claude`, and a real run of seven tickets spends about four minutes of
+  Claude usage), and a few other Linear paths among them. They are listed,
   individually, under **Known gaps** in `docs/RUNBOOK.md` and in `docs/RELEASE-CHECKLIST.md`. If you
   are evaluating whether to rely on something, read those two sections rather than this one.
 
